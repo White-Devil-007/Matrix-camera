@@ -81,7 +81,7 @@ class MatrixCameraApp {
 
   initRain() {
     const fontWidth = Math.max(4, Math.floor(this.outCanvas.width / this.cols));
-    const fontHeight = fontWidth * 2.0;
+    const fontHeight = fontWidth * 1.0;
     const rainCols = Math.floor(this.outCanvas.width / fontWidth);
     
     this.rainStreams = [];
