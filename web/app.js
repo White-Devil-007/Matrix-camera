@@ -1,5 +1,6 @@
 /* =============================================================================
    app.js — Real-Time Web & Mobile Matrix Camera Engine (JavaScript + HTML5 Canvas)
+   Matches Python main.py ASCII quality, aspect ratio, resolution & color stops!
    ============================================================================= */
 
 class MatrixCameraApp {
@@ -10,24 +11,24 @@ class MatrixCameraApp {
     this.outCanvas = document.getElementById('outputCanvas');
     this.outCtx = this.outCanvas.getContext('2d');
 
-    // Configuration & State
-    this.cols = 160;
+    // Configuration & State — Matches Python main.py defaults
+    this.cols = 220;            // Fine resolution for high detail
+    this.contrast = 1.3;        // Matches config.CONTRAST = 1.3
+    this.brightness = 0.02;     // Matches config.BRIGHTNESS = 5
     this.cameraEnabled = true;
     this.rainEnabled = true;
     this.invertMode = false;
     this.silhouetteMode = false;
-    this.facingMode = 'user'; // 'user' or 'environment' for mobile flip
+    this.facingMode = 'user';   // 'user' or 'environment' for mobile flip
 
-    // ASCII Ramp & Colors
+    // ASCII Ramp & Pygame Color Stops
     this.asciiRamp = " .:-=+*#%@";
-    this.colorDark = "#005000";
-    this.colorMid = "#00b428";
-    this.colorBright = "#8cff64";
+    this.colorDark = "rgb(0, 80, 0)";       // COLOR_ASCII_DARK
+    this.colorMid = "rgb(0, 180, 40)";      // COLOR_ASCII_MID
+    this.colorBright = "rgb(140, 255, 100)"; // COLOR_ASCII_BRIGHT
 
-    // Rain overlay streams
+    // Rain overlay streams & background model
     this.rainStreams = [];
-    
-    // Background Subtraction for Silhouette Mode
     this.bgModel = null;
     this.frameCount = 0;
 
@@ -42,7 +43,6 @@ class MatrixCameraApp {
   async init() {
     this.bindEvents();
     await this.startCamera();
-    this.initRain();
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
     requestAnimationFrame((t) => this.loop(t));
@@ -78,8 +78,8 @@ class MatrixCameraApp {
   }
 
   initRain() {
-    const fontHeight = Math.max(6, Math.floor(this.outCanvas.width / this.cols * 1.8));
-    const fontWidth = Math.floor(fontHeight / 1.8);
+    const fontWidth = Math.max(6, Math.floor(this.outCanvas.width / this.cols));
+    const fontHeight = fontWidth * 2.0;
     const rainCols = Math.floor(this.outCanvas.width / fontWidth);
     
     this.rainStreams = [];
@@ -88,14 +88,13 @@ class MatrixCameraApp {
         x: c * fontWidth,
         y: Math.random() * -this.outCanvas.height,
         speed: 2 + Math.random() * 5,
-        length: 8 + Math.floor(Math.random() * 20),
-        chars: []
+        length: 8 + Math.floor(Math.random() * 20)
       });
     }
   }
 
   bindEvents() {
-    // Buttons
+    // HUD Control Buttons
     document.getElementById('btnToggleCam').addEventListener('click', (e) => {
       this.cameraEnabled = !this.cameraEnabled;
       e.currentTarget.classList.toggle('active', this.cameraEnabled);
@@ -138,8 +137,8 @@ class MatrixCameraApp {
       if (key === 'V') document.getElementById('btnToggleSilhou').click();
       if (key === 'M') document.getElementById('btnToggleRain').click();
       if (key === 'C') document.getElementById('btnToggleCam').click();
-      if (key === '+') { this.cols = Math.min(400, this.cols + 20); this.initRain(); }
-      if (key === '-') { this.cols = Math.max(40, this.cols - 20); this.initRain(); }
+      if (key === '+') { this.cols = Math.min(450, this.cols + 30); this.initRain(); }
+      if (key === '-') { this.cols = Math.max(60, this.cols - 30); this.initRain(); }
     });
   }
 
@@ -161,7 +160,7 @@ class MatrixCameraApp {
       document.getElementById('fpsDisplay').innerText = `FPS: ${this.fps} | COLS: ${this.cols}`;
     }
 
-    // Clear Screen
+    // Clear Screen to Pitch Black
     this.outCtx.fillStyle = '#000000';
     this.outCtx.fillRect(0, 0, this.outCanvas.width, this.outCanvas.height);
 
@@ -177,11 +176,12 @@ class MatrixCameraApp {
   }
 
   renderASCII() {
-    const charAspect = 1.8;
+    const charAspect = 2.0; // Monospaced aspect ratio matching Python char_aspect = 2.0
     const vW = this.video.videoWidth || 640;
     const vH = this.video.videoHeight || 480;
 
-    const rows = Math.floor((this.cols * (vH / vW)) / charAspect);
+    // Calculate grid rows preserving camera aspect ratio (matches Python preprocess)
+    const rows = Math.max(1, Math.floor((this.cols * (vH / vW)) / charAspect));
     
     this.procCanvas.width = this.cols;
     this.procCanvas.height = rows;
@@ -199,12 +199,12 @@ class MatrixCameraApp {
     const imgData = this.procCtx.getImageData(0, 0, this.cols, rows);
     const data = imgData.data;
 
-    // Calculate proportional font and cell sizing so the ASCII feed fits cleanly on screen
+    // Font and Cell Sizing to fit screen aspect ratio
     const scaleX = this.outCanvas.width / this.cols;
     const scaleY = this.outCanvas.height / rows;
     const fontW = Math.min(scaleX, scaleY / charAspect);
     const fontH = fontW * charAspect;
-    const fontPx = Math.max(6, Math.floor(fontH));
+    const fontPx = Math.max(7, Math.floor(fontH));
 
     this.outCtx.font = `700 ${fontPx}px 'Fira Code', 'Courier New', monospace`;
     this.outCtx.textBaseline = 'top';
@@ -212,20 +212,12 @@ class MatrixCameraApp {
     const brightnessGrid = new Float32Array(this.cols * rows);
     const totalPixels = this.cols * rows;
 
-    // Grayscale Luminance + Contrast Enhancement
-    let minLum = 1.0, maxLum = 0.0;
+    // Grayscale Luminance + Contrast Adjustment (matches Python config.CONTRAST & BRIGHTNESS)
     for (let i = 0; i < totalPixels; i++) {
       const idx = i * 4;
-      const lum = (0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]) / 255.0;
-      brightnessGrid[i] = lum;
-      if (lum < minLum) minLum = lum;
-      if (lum > maxLum) maxLum = lum;
-    }
-
-    // Auto contrast stretch (CLAHE approximation) for crisp facial features
-    const lumRange = Math.max(0.05, maxLum - minLum);
-    for (let i = 0; i < totalPixels; i++) {
-      brightnessGrid[i] = Math.min(1.0, Math.max(0.0, (brightnessGrid[i] - minLum) / lumRange));
+      let lum = (0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]) / 255.0;
+      lum = lum * this.contrast + this.brightness;
+      brightnessGrid[i] = Math.min(1.0, Math.max(0.0, lum));
     }
 
     // Smart Light-BG Invert Mode
@@ -270,7 +262,7 @@ class MatrixCameraApp {
       }
     }
 
-    // Render ASCII Characters
+    // Render ASCII Characters with Python-exact color stops
     const rampLen = this.asciiRamp.length;
     const gridW = this.cols * fontW;
     const gridH = rows * fontH;
@@ -289,11 +281,11 @@ class MatrixCameraApp {
         const ch = this.asciiRamp[charIdx];
 
         if (val < 0.33) {
-          this.outCtx.fillStyle = this.colorDark;
+          this.outCtx.fillStyle = this.colorDark;      // (0, 80, 0)
         } else if (val < 0.67) {
-          this.outCtx.fillStyle = this.colorMid;
+          this.outCtx.fillStyle = this.colorMid;       // (0, 180, 40)
         } else {
-          this.outCtx.fillStyle = this.colorBright;
+          this.outCtx.fillStyle = this.colorBright;    // (140, 255, 100)
         }
 
         const x = startX + c * fontW;
@@ -304,7 +296,7 @@ class MatrixCameraApp {
 
   renderRain() {
     const fontH = 14;
-    this.outCtx.font = `600 ${fontH}px 'Fira Code', monospace`;
+    this.outCtx.font = `600 ${fontH}px 'Fira Code', 'Courier New', monospace`;
 
     for (let s of this.rainStreams) {
       s.y += s.speed;
