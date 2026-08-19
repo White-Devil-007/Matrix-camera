@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Matrix Digital Rain Camera</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Hidden camera video source -->
+  <video id="webcam" autoplay playsinline muted></video>
+
+  <!-- Processing Canvas (hidden) -->
+  <canvas id="procCanvas" style="display:none;"></canvas>
+
+  <!-- Output ASCII Canvas -->
+  <div id="canvasContainer">
+    <canvas id="outputCanvas"></canvas>
+  </div>
+
+  <!-- Cyberpunk HUD Header -->
+  <header id="hudHeader">
+    <div class="hud-brand">
+      <span class="hud-title">SYSTEM_MATRIX_v2.0</span>
+      <span class="hud-status" id="fpsDisplay">FPS: -- | COLS: 160</span>
+    </div>
+    
+    <!-- Mobile & Desktop Controls Bar -->
+    <div class="hud-controls">
+      <button class="hud-btn" id="btnFlipCam" title="Switch Camera (Front/Rear)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <span class="btn-text">FLIP</span>
+      </button>
+
+      <button class="hud-btn toggle-btn active" id="btnToggleCam">
+        <span class="indicator"></span>
+        <span class="btn-text">CAM</span>
+      </button>
+
+      <button class="hud-btn toggle-btn active" id="btnToggleRain">
+        <span class="indicator"></span>
+        <span class="btn-text">RAIN</span>
+      </button>
+
+      <button class="hud-btn toggle-btn" id="btnToggleInvert">
+        <span class="indicator"></span>
+        <span class="btn-text">INVERT</span>
+      </button>
+
+      <button class="hud-btn toggle-btn" id="btnToggleSilhou">
+        <span class="indicator"></span>
+        <span class="btn-text">SILHOU</span>
+      </button>
+
+      <button class="hud-btn" id="btnSnap" title="Save Screenshot">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+      </button>
+
+      <button class="hud-btn" id="btnFullscreen" title="Toggle Fullscreen">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Help Overlay / Mobile Instructions -->
+  <div id="helpOverlay" class="hidden">
+    <div class="help-card">
+      <h2>MATRIX CAMERA CONTROLS</h2>
+      <ul>
+        <li><kbd>I</kbd> / <b>INVERT</b>: Toggle Light Background mode</li>
+        <li><kbd>V</kbd> / <b>SILHOU</b>: Toggle Silhouette motion mode</li>
+        <li><kbd>M</kbd> / <b>RAIN</b>: Toggle Matrix Digital Rain</li>
+        <li><kbd>C</kbd> / <b>CAM</b>: Toggle Webcam ASCII</li>
+        <li><kbd>+</kbd> / <kbd>-</kbd>: Adjust character resolution</li>
+        <li><kbd>F</kbd>: Fullscreen</li>
+      </ul>
+      <button id="btnCloseHelp">CLOSE</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+  </script>
+</body>
+</html>

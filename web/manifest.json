@@ -1,0 +1,22 @@
+{
+  "name": "Matrix Digital Rain Camera",
+  "short_name": "MatrixCam",
+  "description": "Real-time webcam feed rendered as Matrix ASCII art with digital rain overlays.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f4f9.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f4f9.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
