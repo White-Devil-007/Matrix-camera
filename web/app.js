@@ -162,10 +162,15 @@ class MatrixCameraApp {
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
       const key = e.key.toUpperCase();
+      if (key === 'S') {
+        e.preventDefault();
+        this.takeScreenshot();
+      }
       if (key === 'I') document.getElementById('btnToggleInvert').click();
       if (key === 'V') document.getElementById('btnToggleSilhou').click();
       if (key === 'M') document.getElementById('btnToggleRain').click();
       if (key === 'C') document.getElementById('btnToggleCam').click();
+      if (key === 'F') document.getElementById('btnFullscreen').click();
       if (key === '+') { this.cols = Math.min(600, this.cols + 50); this.initRain(); }
       if (key === '-') { this.cols = Math.max(80, this.cols - 50); this.initRain(); }
     });
