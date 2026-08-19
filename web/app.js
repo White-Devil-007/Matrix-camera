@@ -12,7 +12,7 @@ class MatrixCameraApp {
     this.outCtx = this.outCanvas.getContext('2d');
 
     // Ultra High Density Resolution — 600 cols matching desktop python main.py
-    this.cols = 480;
+    this.cols = 450;
 
     this.contrast = 1.35;        // Matches config.CONTRAST = 1.35
     this.brightness = 0.03;     // Matches config.BRIGHTNESS
