@@ -11,9 +11,8 @@ class MatrixCameraApp {
     this.outCanvas = document.getElementById('outputCanvas');
     this.outCtx = this.outCanvas.getContext('2d');
 
-    // High Density Resolution — 400 cols on Desktop, 260 on Mobile
-    const isMobile = window.innerWidth < 768;
-    this.cols = isMobile ? 260 : 600;
+    // Ultra High Density Resolution — 600 cols matching desktop python main.py
+    this.cols = 600;
 
     this.contrast = 1.35;        // Matches config.CONTRAST = 1.35
     this.brightness = 0.03;     // Matches config.BRIGHTNESS
@@ -43,6 +42,7 @@ class MatrixCameraApp {
   }
 
   async init() {
+    document.getElementById('fpsDisplay').innerText = `FPS: -- | COLS: ${this.cols}`;
     this.bindEvents();
     await this.startCamera();
     this.resizeCanvas();

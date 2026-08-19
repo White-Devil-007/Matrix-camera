@@ -30,7 +30,7 @@
   <header id="hudHeader">
     <div class="hud-brand">
       <span class="hud-title">SYSTEM_MATRIX_v2.0</span>
-      <span class="hud-status" id="fpsDisplay">FPS: -- | COLS: 160</span>
+      <span class="hud-status" id="fpsDisplay">FPS: -- | COLS: 600</span>
     </div>
     
     <!-- Mobile & Desktop Controls Bar -->
@@ -86,11 +86,11 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=5.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg error:', err));
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let r of registrations) r.unregister();
       });
     }
   </script>
