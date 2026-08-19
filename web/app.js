@@ -16,9 +16,12 @@ class MatrixCameraApp {
        ========================================================================= */
 
     // 1. ASCII CAMERA RESOLUTION & DETAIL
-    this.cols = 410;             // Number of ASCII columns across screen width.
-                                 // Higher (400-600) = Fine detail / sharp facial features.
-                                 // Lower (100-200) = Large blocky characters.
+    // Auto-scales based on device type for best performance:
+    //   Mobile phones  (<= 768px wide) → 160 cols (smooth 60 FPS on mid-range phones)
+    //   Tablets        (769–1024px)    → 260 cols (balanced quality & performance)
+    //   Desktop        (> 1024px)      → 410 cols (high-detail matching main.py)
+    const screenW = window.innerWidth;
+    this.cols = screenW <= 768 ? 160 : screenW <= 1024 ? 260 : 410;
 
     // 2. IMAGE PREPROCESSING & CONTRAST
     this.contrast = 1.35;        // Contrast multiplier (1.0 = normal, 1.35 = punchy highlights).
