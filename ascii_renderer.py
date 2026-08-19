@@ -69,27 +69,23 @@ def preprocess(frame_bgr: np.ndarray, cols: int, invert_mode: bool = False, use_
 
     if invert_mode:
         # Smart Light-BG Mode:
-        # Removes light background wall/window into pitch-black space (0.0) while
-        # preserving natural human shading (skin highlights = bright green ASCII,
-        # eyes/eyebrows/hair/mouth = dark green contours and dots).
-        cutoff_pct = getattr(config, 'LIGHT_BG_CUTOFF_PCT', 78)
-        p_bg = float(np.percentile(small, cutoff_pct))
-        p_fg_min = float(np.percentile(small, 5))
+        # Samples outer border pixels to detect true background wall brightness.
+        # Removes light background wall into pitch-black space (0.0) while preserving
+        # natural face highlights and dark facial features (eyes/eyebrows/hair).
+        h_sm, w_sm = small.shape
+        border_mask = np.ones((h_sm, w_sm), dtype=bool)
+        border_mask[4:-4, 4:-4] = False
+        bg_avg = float(np.mean(small[border_mask])) if np.any(border_mask) else 0.65
 
-        if p_bg - p_fg_min > 0.05:
-            # Mask out the light background wall
-            bg_mask = small >= (p_bg - 0.02)
+        if bg_avg > 0.35:
+            bg_cutoff = max(0.20, bg_avg - 0.10)
+            bg_mask = small >= bg_cutoff
 
-            # Rescale subject range [p_fg_min, p_bg - 0.02] -> [0.15, 1.0]
-            denom = max(0.01, (p_bg - 0.02) - p_fg_min)
-            subject = np.clip((small - p_fg_min) / denom, 0.0, 1.0)
-            subject = 0.15 + subject * 0.85
-
-            # Background pixels -> 0.0 (pure black space)
+            norm = np.clip(small / bg_cutoff, 0.0, 1.0)
+            subject = 0.18 + np.power(norm, 0.7) * 0.82
             subject[bg_mask] = 0.0
             small = subject
         else:
-            # Standard contrast inversion fallback
             small = 1.0 - small
 
     return small.astype(np.float32)   # [0, 1]

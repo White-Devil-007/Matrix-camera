@@ -256,24 +256,34 @@ class MatrixCameraApp {
 
     // Smart Light-BG Invert Mode
     if (this.invertMode) {
-      const sorted = Float32Array.from(brightnessGrid).sort();
-      const pBg = sorted[Math.floor(totalPixels * this.invertCutoffPct)];
-      const pFgMin = sorted[Math.floor(totalPixels * 0.05)];
+      // Sample outer border pixels to detect the true brightness of the background wall
+      let outerSum = 0, outerCount = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          if (r < 6 || r > rows - 6 || c < 6 || c > this.cols - 6) {
+            outerSum += brightnessGrid[r * this.cols + c];
+            outerCount++;
+          }
+        }
+      }
+      const bgAvg = outerCount > 0 ? (outerSum / outerCount) : 0.65;
 
-      if (pBg - pFgMin > 0.05) {
-        const bgCutoff = pBg - 0.02;
-        const range = Math.max(0.01, bgCutoff - pFgMin);
-
+      if (bgAvg > 0.35) {
+        // Light background wall detected behind subject!
+        const bgCutoff = Math.max(0.2, bgAvg - 0.10);
+        
         for (let i = 0; i < totalPixels; i++) {
           const val = brightnessGrid[i];
           if (val >= bgCutoff) {
-            brightnessGrid[i] = 0.0; // Black background space
+            brightnessGrid[i] = 0.0; // Mask out light background into pitch-black space
           } else {
-            const norm = Math.min(1.0, Math.max(0.0, (val - pFgMin) / range));
-            brightnessGrid[i] = 0.15 + norm * 0.85; // Glowing skin, dark contours
+            // Rescale subject so skin highlights glow bright green and eyes/contours stay dark
+            const norm = Math.min(1.0, Math.max(0.0, val / bgCutoff));
+            brightnessGrid[i] = 0.18 + Math.pow(norm, 0.7) * 0.82;
           }
         }
       } else {
+        // Dark room fallback: direct contrast inversion
         for (let i = 0; i < totalPixels; i++) {
           brightnessGrid[i] = 1.0 - brightnessGrid[i];
         }
