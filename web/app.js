@@ -1,6 +1,6 @@
 /* =============================================================================
    app.js — Real-Time Web & Mobile Matrix Camera Engine (JavaScript + HTML5 Canvas)
-   Matches Python main.py high-density (400 cols) ASCII resolution & quality!
+   Matches Python main.py high-density ASCII resolution & quality!
    ============================================================================= */
 
 class MatrixCameraApp {
@@ -11,22 +11,46 @@ class MatrixCameraApp {
     this.outCanvas = document.getElementById('outputCanvas');
     this.outCtx = this.outCanvas.getContext('2d');
 
-    // Ultra High Density Resolution — 600 cols matching desktop python main.py
-    this.cols = 410;
+    /* =========================================================================
+       PROGRAM CONFIGURATION SETTINGS (Tweak these values to alter the output!)
+       ========================================================================= */
 
-    this.contrast = 1.35;        // Matches config.CONTRAST = 1.35
-    this.brightness = 0.03;     // Matches config.BRIGHTNESS
-    this.cameraEnabled = true;
-    this.rainEnabled = true;
-    this.invertMode = false;
-    this.silhouetteMode = false;
-    this.facingMode = 'user';   // 'user' or 'environment' for mobile flip
+    // 1. ASCII CAMERA RESOLUTION & DETAIL
+    this.cols = 410;             // Number of ASCII columns across screen width.
+                                 // Higher (400-600) = Fine detail / sharp facial features.
+                                 // Lower (100-200) = Large blocky characters.
 
-    // ASCII Ramp & Pygame Color Stops
-    this.asciiRamp = " .:-=+*#%@";
-    this.colorDark = "rgb(0, 80, 0)";       // COLOR_ASCII_DARK
-    this.colorMid = "rgb(0, 180, 40)";      // COLOR_ASCII_MID
-    this.colorBright = "rgb(140, 255, 100)"; // COLOR_ASCII_BRIGHT
+    // 2. IMAGE PREPROCESSING & CONTRAST
+    this.contrast = 1.35;        // Contrast multiplier (1.0 = normal, 1.35 = punchy highlights).
+    this.brightness = 0.03;      // Brightness offset (adds subtle base glow to dark regions).
+    this.asciiRamp = " .:-=+*#%@"; // Character ramp mapped from dark (left) to bright (right).
+
+    // 3. COLOR PALETTE (Pygame RGB Stops)
+    this.colorDark = "rgb(0, 80, 0)";        // Low brightness pixels (dark contours/hair)
+    this.colorMid = "rgb(0, 180, 40)";       // Midtone skin & facial highlights
+    this.colorBright = "rgb(140, 255, 100)";  // Vivid highlights & intense spots
+
+    // 4. MATRIX DIGITAL RAIN (Background Rain Streams)
+    this.rainEnabled = true;     // Master toggle for Matrix rain effect.
+    this.rainDensity = 0.25;     // Percentage of screen columns with active rain (0.25 = 25% density, smaller & fewer).
+    this.rainFontSize = 11;      // Pixel height of rain characters (smaller = subtle background code).
+    this.rainMinSpeed = 2;       // Minimum fall speed (pixels per frame).
+    this.rainMaxSpeed = 5;       // Maximum fall speed (pixels per frame).
+    this.rainMinLength = 5;      // Minimum drop length in characters.
+    this.rainMaxLength = 12;     // Maximum drop length in characters.
+
+    // 5. INVERT MODE (Smart Light-BG Suppression)
+    this.invertCutoffPct = 0.78; // Cutoff percentile (78%) for isolating light background walls into pitch-black.
+
+    // 6. INITIAL TOGGLES & CAMERA MODES
+    this.cameraEnabled = true;   // Live camera feed ON/OFF
+    this.invertMode = false;     // Smart Light-BG Invert Mode ON/OFF
+    this.silhouetteMode = false; // Silhouette motion-only mode ON/OFF
+    this.facingMode = 'user';    // 'user' (front selfie camera) or 'environment' (rear camera)
+
+    /* =========================================================================
+       END OF CONFIGURATION SETTINGS
+       ========================================================================= */
 
     // Rain overlay streams & background model
     this.rainStreams = [];
@@ -80,17 +104,20 @@ class MatrixCameraApp {
   }
 
   initRain() {
-    const fontWidth = Math.max(4, Math.floor(this.outCanvas.width / this.cols));
-    const fontHeight = fontWidth * 1.0;
-    const rainCols = Math.floor(this.outCanvas.width / fontWidth);
+    const fontH = this.rainFontSize;
+    const fontW = Math.floor(fontH * 0.65);
+    const totalCols = Math.floor(this.outCanvas.width / fontW);
     
     this.rainStreams = [];
-    for (let c = 0; c < rainCols; c++) {
+    for (let c = 0; c < totalCols; c++) {
+      // Spawn rain streams on only a fraction of columns (based on rainDensity)
+      if (Math.random() > this.rainDensity) continue;
+
       this.rainStreams.push({
-        x: c * fontWidth,
+        x: c * fontW,
         y: Math.random() * -this.outCanvas.height,
-        speed: 2 + Math.random() * 5,
-        length: 8 + Math.floor(Math.random() * 20)
+        speed: this.rainMinSpeed + Math.random() * (this.rainMaxSpeed - this.rainMinSpeed),
+        length: this.rainMinLength + Math.floor(Math.random() * (this.rainMaxLength - this.rainMinLength))
       });
     }
   }
@@ -225,7 +252,7 @@ class MatrixCameraApp {
     // Smart Light-BG Invert Mode
     if (this.invertMode) {
       const sorted = Float32Array.from(brightnessGrid).sort();
-      const pBg = sorted[Math.floor(totalPixels * 0.78)];
+      const pBg = sorted[Math.floor(totalPixels * this.invertCutoffPct)];
       const pFgMin = sorted[Math.floor(totalPixels * 0.05)];
 
       if (pBg - pFgMin > 0.05) {
@@ -297,14 +324,14 @@ class MatrixCameraApp {
   }
 
   renderRain() {
-    const fontH = 14;
+    const fontH = this.rainFontSize;
     this.outCtx.font = `600 ${fontH}px 'Fira Code', 'Courier New', monospace`;
 
     for (let s of this.rainStreams) {
       s.y += s.speed;
       if (s.y > this.outCanvas.height + s.length * fontH) {
         s.y = -s.length * fontH;
-        s.speed = 2 + Math.random() * 5;
+        s.speed = this.rainMinSpeed + Math.random() * (this.rainMaxSpeed - this.rainMinSpeed);
       }
 
       for (let i = 0; i < s.length; i++) {
@@ -315,11 +342,11 @@ class MatrixCameraApp {
         const ch = String.fromCharCode(charCode);
 
         if (i === 0) {
-          this.outCtx.fillStyle = '#ffffff'; // Leading bright head
+          this.outCtx.fillStyle = '#ffffff'; // Leading bright head character
         } else if (i < 3) {
           this.outCtx.fillStyle = '#8cff64';
         } else {
-          this.outCtx.fillStyle = `rgba(0, 180, 40, ${1 - i / s.length})`;
+          this.outCtx.fillStyle = `rgba(0, 180, 40, ${0.8 - (i / s.length) * 0.7})`;
         }
 
         this.outCtx.fillText(ch, s.x, charY);
