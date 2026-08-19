@@ -28,7 +28,7 @@ class MatrixCameraApp {
     // 3. COLOR PALETTE (Pygame RGB Stops)
     this.colorDark = "rgb(0, 80, 0)";        // Low brightness pixels (dark contours/hair)
     this.colorMid = "rgb(0, 180, 40)";       // Midtone skin & facial highlights
-    this.colorBright = "rgb(140, 255, 100)";  // Vivid highlights & intense spots
+    this.colorBright = "rgba(0, 217, 255, 1)";  // Vivid highlights & intense spots
 
     // 4. MATRIX DIGITAL RAIN (Background Rain Streams)
     this.rainEnabled = true;     // Master toggle for Matrix rain effect.
