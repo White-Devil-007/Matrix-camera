@@ -1,6 +1,6 @@
 /* =============================================================================
    app.js — Real-Time Web & Mobile Matrix Camera Engine (JavaScript + HTML5 Canvas)
-   Matches Python main.py ASCII quality, aspect ratio, resolution & color stops!
+   Matches Python main.py high-density (400 cols) ASCII resolution & quality!
    ============================================================================= */
 
 class MatrixCameraApp {
@@ -11,10 +11,12 @@ class MatrixCameraApp {
     this.outCanvas = document.getElementById('outputCanvas');
     this.outCtx = this.outCanvas.getContext('2d');
 
-    // Configuration & State — Matches Python main.py defaults
-    this.cols = 220;            // Fine resolution for high detail
-    this.contrast = 1.3;        // Matches config.CONTRAST = 1.3
-    this.brightness = 0.02;     // Matches config.BRIGHTNESS = 5
+    // High Density Resolution — 400 cols on Desktop, 260 on Mobile
+    const isMobile = window.innerWidth < 768;
+    this.cols = isMobile ? 260 : 400;
+
+    this.contrast = 1.35;        // Matches config.CONTRAST = 1.35
+    this.brightness = 0.03;     // Matches config.BRIGHTNESS
     this.cameraEnabled = true;
     this.rainEnabled = true;
     this.invertMode = false;
@@ -78,7 +80,7 @@ class MatrixCameraApp {
   }
 
   initRain() {
-    const fontWidth = Math.max(6, Math.floor(this.outCanvas.width / this.cols));
+    const fontWidth = Math.max(4, Math.floor(this.outCanvas.width / this.cols));
     const fontHeight = fontWidth * 2.0;
     const rainCols = Math.floor(this.outCanvas.width / fontWidth);
     
@@ -137,8 +139,8 @@ class MatrixCameraApp {
       if (key === 'V') document.getElementById('btnToggleSilhou').click();
       if (key === 'M') document.getElementById('btnToggleRain').click();
       if (key === 'C') document.getElementById('btnToggleCam').click();
-      if (key === '+') { this.cols = Math.min(450, this.cols + 30); this.initRain(); }
-      if (key === '-') { this.cols = Math.max(60, this.cols - 30); this.initRain(); }
+      if (key === '+') { this.cols = Math.min(600, this.cols + 50); this.initRain(); }
+      if (key === '-') { this.cols = Math.max(80, this.cols - 50); this.initRain(); }
     });
   }
 
@@ -204,7 +206,7 @@ class MatrixCameraApp {
     const scaleY = this.outCanvas.height / rows;
     const fontW = Math.min(scaleX, scaleY / charAspect);
     const fontH = fontW * charAspect;
-    const fontPx = Math.max(7, Math.floor(fontH));
+    const fontPx = Math.max(4, Math.floor(fontH));
 
     this.outCtx.font = `700 ${fontPx}px 'Fira Code', 'Courier New', monospace`;
     this.outCtx.textBaseline = 'top';
