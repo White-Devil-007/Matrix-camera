@@ -13,7 +13,7 @@ class MatrixCameraApp {
 
     // High Density Resolution — 400 cols on Desktop, 260 on Mobile
     const isMobile = window.innerWidth < 768;
-    this.cols = isMobile ? 260 : 400;
+    this.cols = isMobile ? 260 : 600;
 
     this.contrast = 1.35;        // Matches config.CONTRAST = 1.35
     this.brightness = 0.03;     // Matches config.BRIGHTNESS
