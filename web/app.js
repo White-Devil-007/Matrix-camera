@@ -199,27 +199,37 @@ class MatrixCameraApp {
     const imgData = this.procCtx.getImageData(0, 0, this.cols, rows);
     const data = imgData.data;
 
-    // Font sizing
-    const fontW = this.outCanvas.width / this.cols;
+    // Calculate proportional font and cell sizing so the ASCII feed fits cleanly on screen
+    const scaleX = this.outCanvas.width / this.cols;
+    const scaleY = this.outCanvas.height / rows;
+    const fontW = Math.min(scaleX, scaleY / charAspect);
     const fontH = fontW * charAspect;
-    const fontPx = Math.floor(fontH);
+    const fontPx = Math.max(6, Math.floor(fontH));
 
-    this.outCtx.font = `700 ${fontPx}px 'Fira Code', monospace`;
+    this.outCtx.font = `700 ${fontPx}px 'Fira Code', 'Courier New', monospace`;
     this.outCtx.textBaseline = 'top';
 
     const brightnessGrid = new Float32Array(this.cols * rows);
     const totalPixels = this.cols * rows;
 
-    // Grayscale Luminance
+    // Grayscale Luminance + Contrast Enhancement
+    let minLum = 1.0, maxLum = 0.0;
     for (let i = 0; i < totalPixels; i++) {
       const idx = i * 4;
       const lum = (0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]) / 255.0;
       brightnessGrid[i] = lum;
+      if (lum < minLum) minLum = lum;
+      if (lum > maxLum) maxLum = lum;
+    }
+
+    // Auto contrast stretch (CLAHE approximation) for crisp facial features
+    const lumRange = Math.max(0.05, maxLum - minLum);
+    for (let i = 0; i < totalPixels; i++) {
+      brightnessGrid[i] = Math.min(1.0, Math.max(0.0, (brightnessGrid[i] - minLum) / lumRange));
     }
 
     // Smart Light-BG Invert Mode
     if (this.invertMode) {
-      // Calculate 80th percentile for background wall isolation
       const sorted = Float32Array.from(brightnessGrid).sort();
       const pBg = sorted[Math.floor(totalPixels * 0.78)];
       const pFgMin = sorted[Math.floor(totalPixels * 0.05)];
@@ -231,7 +241,7 @@ class MatrixCameraApp {
         for (let i = 0; i < totalPixels; i++) {
           const val = brightnessGrid[i];
           if (val >= bgCutoff) {
-            brightnessGrid[i] = 0.0; // Black background
+            brightnessGrid[i] = 0.0; // Black background space
           } else {
             const norm = Math.min(1.0, Math.max(0.0, (val - pFgMin) / range));
             brightnessGrid[i] = 0.15 + norm * 0.85; // Glowing skin, dark contours
@@ -249,14 +259,10 @@ class MatrixCameraApp {
       if (!this.bgModel) {
         this.bgModel = Float32Array.from(brightnessGrid);
       } else {
-        // Simple running background learning
         const alpha = 0.05;
         for (let i = 0; i < totalPixels; i++) {
           const diff = Math.abs(brightnessGrid[i] - this.bgModel[i]);
-          if (diff > 0.18) {
-            // Foreground object detected!
-          } else {
-            // Background update & suppress
+          if (diff <= 0.18) {
             this.bgModel[i] = this.bgModel[i] * (1 - alpha) + brightnessGrid[i] * alpha;
             brightnessGrid[i] = 0.0;
           }
@@ -266,8 +272,10 @@ class MatrixCameraApp {
 
     // Render ASCII Characters
     const rampLen = this.asciiRamp.length;
-    const startX = (this.outCanvas.width - this.cols * fontW) / 2;
-    const startY = (this.outCanvas.height - rows * fontH) / 2;
+    const gridW = this.cols * fontW;
+    const gridH = rows * fontH;
+    const startX = (this.outCanvas.width - gridW) / 2;
+    const startY = (this.outCanvas.height - gridH) / 2;
 
     for (let r = 0; r < rows; r++) {
       const y = startY + r * fontH;
