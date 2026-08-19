@@ -32,7 +32,7 @@ class MatrixCameraApp {
 
     // 4. MATRIX DIGITAL RAIN (Background Rain Streams)
     this.rainEnabled = true;     // Master toggle for Matrix rain effect.
-    this.rainDensity = 0.25;     // Percentage of screen columns with active rain (0.25 = 25% density, smaller & fewer).
+    this.rainDensity = 0.50;     // Percentage of screen columns with active rain (0.25 = 25% density, smaller & fewer).
     this.rainFontSize = 11;      // Pixel height of rain characters (smaller = subtle background code).
     this.rainMinSpeed = 2;       // Minimum fall speed (pixels per frame).
     this.rainMaxSpeed = 5;       // Maximum fall speed (pixels per frame).
