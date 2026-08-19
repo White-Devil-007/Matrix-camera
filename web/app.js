@@ -290,19 +290,50 @@ class MatrixCameraApp {
       }
     }
 
-    // Silhouette Mode (Background Subtraction)
+    // Silhouette Mode — proper background subtraction matching Python MOG2 behaviour
     if (this.silhouetteMode) {
+      const expectedSize = this.cols * rows;
+
+      // Reset model whenever grid dimensions change (e.g. window resize or cols change)
+      if (this.bgModel && this.bgModel.length !== expectedSize) {
+        this.bgModel = null;
+        this.bgWarmup = 0;
+      }
+
       if (!this.bgModel) {
+        // Initialise background model from first frame
         this.bgModel = Float32Array.from(brightnessGrid);
+        this.bgWarmup = 1;
+      }
+
+      const alpha = 0.07;      // background learning rate (higher = adapts faster)
+      const fgThresh = 0.12;   // minimum pixel difference to be considered foreground
+
+      if (this.bgWarmup < 40) {
+        // Warmup phase: keep updating the background model, show nothing yet
+        for (let i = 0; i < expectedSize; i++) {
+          this.bgModel[i] = this.bgModel[i] * (1 - alpha) + brightnessGrid[i] * alpha;
+          brightnessGrid[i] = 0.0;
+        }
+        this.bgWarmup++;
       } else {
-        const alpha = 0.05;
-        for (let i = 0; i < totalPixels; i++) {
+        // Active phase: show only foreground pixels, update bg for background pixels
+        for (let i = 0; i < expectedSize; i++) {
           const diff = Math.abs(brightnessGrid[i] - this.bgModel[i]);
-          if (diff <= 0.18) {
+          if (diff > fgThresh) {
+            // Foreground — keep the pixel visible (do not suppress)
+          } else {
+            // Background — update the model and hide the pixel
             this.bgModel[i] = this.bgModel[i] * (1 - alpha) + brightnessGrid[i] * alpha;
             brightnessGrid[i] = 0.0;
           }
         }
+      }
+    } else {
+      // Reset model whenever silhouette mode is toggled off so it relearns fresh next time
+      if (this.bgModel) {
+        this.bgModel = null;
+        this.bgWarmup = 0;
       }
     }
 
